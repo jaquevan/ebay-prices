@@ -4,8 +4,8 @@ import os
 
 from sqlalchemy.exc import IntegrityError
 
-from ebay.utils.db import db
-from utils.logger import configure_logger
+from ebay.models.utils.db import db
+from ebay.models.utils.logger import configure_logger
 
 
 logger = logging.getLogger(__name__)
