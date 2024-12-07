@@ -10,6 +10,9 @@ COPY . /app
 # Copy the env file to the container
 COPY .env /app/.env
 
+# Copy the secret env file to the container
+COPY .secrets.env /app/.secrets.env
+
 # Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
