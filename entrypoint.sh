@@ -5,6 +5,12 @@ if [ -f .env ]; then
     export $(cat .env | xargs)
 fi
 
+# Load the secret environment variables from .secrets.env file
+if [ -f .secrets.env ]; then
+    echo "Loading secrets.env file..."
+    export $(cat .secrets.env | xargs)
+fi
+
 # Debugging: Print the CREATE_DB value
 echo "CREATE_DB is set to: $CREATE_DB"
 
