@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
+load_dotenv(dotenv_path="../.secrets.env", override=True)
 
 CLIENT_ID = os.getenv("EBAY_PROD_CLIENT_ID")
 CLIENT_SECRET = os.getenv("EBAY_PROD_CLIENT_SECRET")
