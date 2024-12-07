@@ -4,10 +4,13 @@ from flask import Flask, jsonify, make_response, Response, request
 
 
 from ebay.utils.sql_utils import check_database_connection, check_table_exists
+from services.tokenGeneration import get_access_token
+from services.items_search import search_items
 
 
 # Load environment variables from .env file
 load_dotenv()
+load_dotenv(dotenv_path="./secrets.env", override=True)
 
 app = Flask(__name__)
 # This bypasses standard security stuff we'll talk about later
@@ -57,6 +60,38 @@ def db_check() -> Response:
     except Exception as e:
         return make_response(jsonify({'error': str(e)}), 404)
 
+#####################################################
+# Token Management
+#####################################################
+@app.route('/api/token', methods=['GET'])
+def get_token():
+    """
+    Generate and return an eBay API token.
+    """
+    try:
+        token = get_access_token()
+        return make_response(jsonify({'token': token}), 200)
+    except Exception as e:
+        return make_response(jsonify({'error': str(e)}), 500)
+
+#####################################################
+# Item Search Routes
+#####################################################
+@app.route('/api/search', methods=['GET'])
+def search():
+    """
+    Search for items on eBay.
+    """
+    query = request.args.get('query')
+    limit = int(request.args.get('limit', 5))
+    if not query:
+        return make_response(jsonify({'error': 'Query parameter is required'}), 400)
+
+    try:
+        items = search_items(query, limit)
+        return make_response(jsonify({'items': items}), 200)
+    except Exception as e:
+        return make_response(jsonify({'error': str(e)}), 500)
 
 ##########################################################
 #
