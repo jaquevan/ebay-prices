@@ -5,13 +5,16 @@ if [ -f .env ]; then
     export $(cat .env | xargs)
 fi
 
+# Debugging: Print the CREATE_DB value
+echo "CREATE_DB is set to: $CREATE_DB"
+
 # Check if CREATE_DB is true, and run the database creation script if so
 if [ "$CREATE_DB" = "true" ]; then
     echo "Creating the database..."
-    /app/sql/create_db.sh
+    ./sql/create_db.sh
 else
     echo "Skipping database creation."
 fi
 
 # Start the Python application
-exec python app.py
+exec python3 app.py
