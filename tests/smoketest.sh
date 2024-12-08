@@ -73,3 +73,68 @@ logout_user() {
   fi
 }
 
+# Function to initialize the database
+init_db() {
+  echo "Initializing the database..."
+  response=$(curl -s -X POST "$BASE_URL/init-db")
+  if echo "$response" | grep -q '"status": "success"'; then
+    echo "Database initialized successfully."
+    if [ "$ECHO_JSON" = true ]; then
+      echo "Initialization Response JSON:"
+      echo "$response" | jq .
+    fi
+  else
+    echo "Failed to initialize the database."
+    exit 1
+  fi
+}
+
+check_number_of_orders() {
+  item_id=$1
+  echo "Checking the number of orders for item ID: $item_id..."
+  response=$(curl -s -X GET "$BASE_URL/orders/$item_id")
+
+  if echo "$response" | grep -q '"orders_count"'; then
+    echo "Number of orders retrieved successfully."
+    if [ "$ECHO_JSON" = true ]; then
+      echo "Order Count Response JSON:"
+      echo "$response" | jq .
+    fi
+  else
+    echo "Failed to retrieve the number of orders for item ID: $item_id."
+    if [ "$ECHO_JSON" = true ]; then
+      echo "Error Response JSON:"
+      echo "$response" | jq .
+    fi
+    exit 1
+  fi
+}
+
+
+
+# Run all the steps in order
+check_health
+init_db
+create_user
+login_user
+check_number_of_orders "$ITEM_ID"
+
+#create_meal
+#clear_combatants
+#prep_combatant
+#prep_combatant
+#get_combatants
+#run_battle
+#prep_combatant
+#run_battle
+#prep_combatant
+#run_battle
+#get_leaderboard_wins
+#get_leaderboard_win_pct
+#logout_user
+#get_meal_by_name
+#get_meal_by_id
+#delete_meal_by_id
+
+echo "All tests passed successfully!"
+

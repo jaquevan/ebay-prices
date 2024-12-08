@@ -1,4 +1,5 @@
 from dotenv import load_dotenv
+import requests
 from flask import Flask, jsonify, make_response, Response, request
 # from flask_cors import CORS
 
@@ -18,8 +19,11 @@ app = Flask(__name__)
 # uncomment this
 # CORS(app)
 
-# Initialize the BattleModel
+# Initialize model for route /
 
+@app.route('/')
+def index():
+    return "Welcome to our eBay API item service!"
 
 ####################################################
 #
@@ -95,10 +99,66 @@ def search():
 
 ##########################################################
 #
-# Meals
+# ebay items (eq. to meals in meal max)
 #
 ##########################################################
 
+@app.route('/api/orders/<item_id>', methods=['GET'])
+##########################################################
+# Function to get the number of orders
+##########################################################
+
+def number_of_orders(item_id):
+    try:
+        token = get_access_token()
+        if not token:
+            app.logger.error("Failed to retrieve access token.")
+            return 0
+
+        url = f'https://api.ebay.com/buy/browse/v1/item/{item_id}'
+        app.logger.info(f"Requesting eBay API for item ID: {item_id}")
+
+        headers = {
+            'Authorization': f'Bearer {token}',
+            'Content-Type': 'application/json'
+        }
+
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
+
+        data = response.json()
+        sales_count = data.get('estimatedSalesCount', 0)
+        return sales_count
+
+    except requests.RequestException as e:
+        app.logger.error(f"Request error: {e}")
+        return 0
+    except Exception as e:
+        app.logger.error(f"Unexpected error: {e}")
+        return 0
+
+##########################################################
+# Route to get number of orders for an item
+##########################################################
+# http://127.0.0.1:5000/api/orders/123
+
+@app.route('/api/orders/<item_id>', methods=['GET'])
+def get_number_of_orders(item_id):
+    """
+    API endpoint to get the number of orders for a specific item.
+
+    Args:
+        item_id (str): The eBay item ID.
+
+    Returns:
+        JSON response with the number of orders or an error message.
+    """
+    try:
+        orders_count = number_of_orders(item_id)  # This returns an int
+        return jsonify({'item_id': item_id, 'orders_count': orders_count})
+    except Exception as e:
+        app.logger.error(f"Error in get_number_of_orders: {e}")
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)
