@@ -21,7 +21,7 @@ class WishlistModel:
         Initializes the WishlistModel with an empty wishlist.
         """
         self.wishlist: List[Item] = []
-
+        
 
     ##################################################
     # Wishlist Management Functions
@@ -87,16 +87,17 @@ class WishlistModel:
     # Wishlist Retrieval Functions
     ##################################################
 
-    def get_all_items(self) -> List[Item]:
+    def get_all_items(self):
         """
-        Returns a list of all items in the wishlist.
-
-        Raises:
-            ValueError: If the wishlist is empty.
+        Retrieves all items in the wishlist.
+        
+        Returns:
+            list: A list of all items in the wishlist.
         """
-        self.check_if_empty()
-        logger.info("Getting all items in the wishlist")
+        if self.check_if_empty():
+            return []  # Return an empty list if the wishlist is empty
         return self.wishlist
+
 
     def get_item_by_item_id(self, item_id: int) -> Optional[Item]:
         """
@@ -165,8 +166,8 @@ class WishlistModel:
             raise ValueError(f"Invalid item ID: {item_id}")
 
         if check_in_wishlist and item_id not in [item.id for item in self.wishlist]:
-            logger.error("Item with ID %d not found in wishlist", item_id)
-            raise ValueError(f"Item with ID {item_id} not found in wishlist")
+            logger.error("Item with ID %d not found in the wishlist", item_id)
+            raise ValueError(f"Item with ID {item_id} not found in the wishlist")
 
         return item_id
 
@@ -191,13 +192,15 @@ class WishlistModel:
 
         return price
 
-    def check_if_empty(self) -> Boolean:
+    def check_if_empty(self) -> bool:
         """
-        Checks if the wishlist is empty. Logs an error and raises a ValueError if it is.
+        Checks if the wishlist is empty.
 
-        Raises:
-            Boolean: If the wishlist is empty.
+        Returns:
+            bool: True if the wishlist is empty, False otherwise.
         """
         if not self.wishlist:
             logger.error("Wishlist is empty")
-            raise ValueError("Wishlist is empty")
+            return True
+        return False
+

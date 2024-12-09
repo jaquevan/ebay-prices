@@ -78,7 +78,7 @@ def test_get_item_by_item_id(wishlist_model, sample_item):
 
 def test_get_item_by_invalid_item_id(wishlist_model):
     """Test that retrieving an item with a non-existent ID raises a ValueError."""
-    with pytest.raises(ValueError, match="Item with ID 1 not found in wishlist"):
+    with pytest.raises(ValueError, match="Item with ID 1 not found in the wishlist"):
         wishlist_model.get_item_by_item_id(1)
 
 
