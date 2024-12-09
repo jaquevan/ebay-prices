@@ -5,9 +5,7 @@ from flask import Flask, jsonify, make_response, Response, request
 
 
 from ebay.utils.sql_utils import check_database_connection, check_table_exists
-from services.tokenGeneration import get_access_token
-from services.items_search import search_items
-
+from ebay.services.ebay_client import get_access_token, search_items
 
 # Load environment variables from .env file
 load_dotenv()
