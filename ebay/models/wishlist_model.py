@@ -22,6 +22,7 @@ class WishlistModel:
         """
         self.wishlist: List[Item] = []
 
+
     ##################################################
     # Wishlist Management Functions
     ##################################################
@@ -190,12 +191,12 @@ class WishlistModel:
 
         return price
 
-    def check_if_empty(self) -> None:
+    def check_if_empty(self) -> Boolean:
         """
         Checks if the wishlist is empty. Logs an error and raises a ValueError if it is.
 
         Raises:
-            ValueError: If the wishlist is empty.
+            Boolean: If the wishlist is empty.
         """
         if not self.wishlist:
             logger.error("Wishlist is empty")

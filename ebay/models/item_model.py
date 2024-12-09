@@ -10,7 +10,7 @@ configure_logger(logger)
 
 
 @dataclass
-class WishlistItem:
+class Item:
    id: int
    seller: str
    title: str
@@ -71,7 +71,7 @@ def delete_item(item_id: int) -> None:
        raise e
 
 
-def get_item_by_id(item_id: int) -> WishlistItem:
+def get_item_by_id(item_id: int) -> Item:
    try:
        with get_db_connection() as conn:
            cursor = conn.cursor()
@@ -89,7 +89,7 @@ def get_item_by_id(item_id: int) -> WishlistItem:
                    raise ValueError(f"Item with ID {item_id} has been deleted")
 
 
-               return WishlistItem(
+               return Item(
                    id=row[0],
                    seller=row[1],
                    title=row[2],

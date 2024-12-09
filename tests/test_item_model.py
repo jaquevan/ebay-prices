@@ -11,7 +11,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 from ebay.models.item_model import (
-   WishlistItem,
+   Item,
    create_item,
    delete_item,
    get_item_by_id,
