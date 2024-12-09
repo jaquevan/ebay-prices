@@ -8,7 +8,7 @@ from sqlalchemy.exc import IntegrityError
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from ebay.models.user_model import Users
-from ebay.models.utils.db import db
+from ebay.utils.db import db
 
 TEST_DATABASE_URL = "sqlite:///:memory:"
 engine = create_engine(TEST_DATABASE_URL)
