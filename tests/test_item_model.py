@@ -218,7 +218,7 @@ def test_get_item_by_id(mock_cursor):
    mock_cursor.fetchone.return_value = (1, "Seller A", "Item A", 100.0, "Category A", 10, False)
 
 
-   expected_result = WishlistItem(
+   expected_result = Item(
        id=1,
        seller="Seller A",
        title="Item A",
