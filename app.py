@@ -46,7 +46,7 @@ def healthcheck() -> Response:
 @app.route('/api/db-check', methods=['GET'])
 def db_check() -> Response:
     """
-    Route to check if the database connection and meals table are functional.
+    Route to check if the database connection and wishlist table are functional.
 
     Returns:
         JSON response indicating the database health status.
@@ -57,9 +57,9 @@ def db_check() -> Response:
         app.logger.info("Checking database connection...")
         check_database_connection()
         app.logger.info("Database connection is OK.")
-        app.logger.info("Checking if meals table exists...")
-        check_table_exists("meals")
-        app.logger.info("meals table exists.")
+        app.logger.info("Checking if wishlist table exists...")
+        check_table_exists("wishlist")
+        app.logger.info("wishlist table exists.")
         return make_response(jsonify({'database_status': 'healthy'}), 200)
     except Exception as e:
         return make_response(jsonify({'error': str(e)}), 404)
