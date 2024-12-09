@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
-load_dotenv(dotenv_path="../.secrets.env", override=True)
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), '.secrets.env'))
 
 CLIENT_ID = os.getenv("EBAY_PROD_CLIENT_ID")
 CLIENT_SECRET = os.getenv("EBAY_PROD_CLIENT_SECRET")
@@ -94,4 +94,30 @@ def search_items(query, limit=5):
     except requests.exceptions.RequestException as e:
         raise RuntimeError(f"Error searching for items: {e}")
 
+def search_item_by_id(ebay_item_id):
+    """
+    Searches for items on eBay using the Browse API.
 
+    Args:
+        query (str): The search query.
+        limit (int): The number of results to return.
+
+    Returns:
+        list[dict]: A list of items matching the search query.
+    """
+    token = get_access_token()  # Ensure a valid token is available
+
+    url = f"https://api.ebay.com/buy/browse/v1/item/{ebay_item_id}"
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json"
+    }
+
+    try:
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()  # Raise an exception for HTTP errors
+        data = response.json()
+
+        return data
+    except requests.exceptions.RequestException as e:
+        raise RuntimeError(f"Error searching for items: {e}")
