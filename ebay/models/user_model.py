@@ -2,10 +2,12 @@ import hashlib
 import logging
 import os
 
+from flask import Flask
+from sqlalchemy import exc
 from sqlalchemy.exc import IntegrityError
 
-from ebay.models.utils.db import db
-from ebay.models.utils.logger import configure_logger
+from ebay.utils.db import db
+from ebay.utils.logger import configure_logger
 
 
 logger = logging.getLogger(__name__)
