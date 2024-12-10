@@ -1,9 +1,11 @@
 from dotenv import load_dotenv
 import requests
 from flask import Flask, jsonify, make_response, Response, request
+
+
 # from flask_cors import CORS
 
-
+from ebay.models.item_model import Item
 from ebay.utils.sql_utils import check_database_connection, check_table_exists
 from ebay.services.ebay_client import get_access_token, search_items
 
@@ -100,6 +102,125 @@ def search():
 # ebay items (eq. to meals in meal max)
 #
 ##########################################################
+
+##########################################################
+# Function to search for an item by keyword or category
+##########################################################
+@app.route('/api/items/search', methods=['GET'])
+def browse_items():
+    """
+    Search for items by category or keyword.
+
+    """
+    query = request.args.get('query')
+    if not query:
+        return make_response(jsonify({'error': 'Query parameter is required'}), 400)
+
+    try:
+        token = get_access_token()
+        url = f'https://api.ebay.com/buy/browse/v1/item_summary/search?q={query}'
+        headers = {
+            'Authorization': f'Bearer {token}',
+            'Content-Type': 'application/json'
+        }
+
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
+        items = response.json().get('itemSummaries', [])
+
+        return make_response(jsonify({'items': items}), 200)
+    except Exception as e:
+        return make_response(jsonify({'error': str(e)}), 500)
+
+##########################################################
+# Function to get the top item of an ebay search since
+# it returns alot of searches with the above method
+##########################################################
+@app.route('/api/items/top-search', methods=['GET'])
+def get_top_search_result():
+    """
+    Get the top search result for a given keyword. Based on the above function which gets a search
+    """
+    query = request.args.get('query')
+    if not query:
+        return make_response(jsonify({'error': 'Query parameter is required'}), 400)
+
+    try:
+        token = get_access_token()
+        url = f'https://api.ebay.com/buy/browse/v1/item_summary/search?q={query}&limit=1'
+        headers = {
+            'Authorization': f'Bearer {token}',
+            'Content-Type': 'application/json'
+        }
+
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
+        items = response.json().get('itemSummaries', [])
+
+        if not items:
+            return make_response(jsonify({'message': 'No results found'}), 200)
+
+        # Simplify the output for the top item
+        top_item = items[0]
+        simplified_top_item = {
+            'title': top_item.get('title'),
+            'price': top_item.get('price', {}).get('value'),
+            'currency': top_item.get('price', {}).get('currency'),
+            'item_id': top_item.get('itemId'),
+            'item_web_url': top_item.get('itemWebUrl'),
+            'condition': top_item.get('condition'),
+            'image_url': top_item.get('image', {}).get('imageUrl')
+        }
+
+        return make_response(jsonify({'top_item': simplified_top_item}), 200)
+    except Exception as e:
+        return make_response(jsonify({'error': str(e)}), 500)
+
+# this function gets the number of items sold for a specific item
+# for testing this function and function below use this test itemid:
+# http://127.0.0.1:5001/api/items/v1|110567362227|0/sold-quantity (available for other function)
+@app.route('/api/items/<item_id>/sold-quantity', methods=['GET'])
+def get_sold_quantity(item_id):
+    """
+    Get the sold quantity for a specific item.
+    """
+    try:
+        token = get_access_token()
+        url = f'https://api.ebay.com/buy/browse/v1/item/{item_id}'
+        headers = {
+            'Authorization': f'Bearer {token}',
+            'Content-Type': 'application/json'
+        }
+
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
+        sold_count = response.json().get('estimatedSalesCount', 0)
+
+        return make_response(jsonify({'item_id': item_id, 'sold_quantity': sold_count}), 200)
+    except Exception as e:
+        return make_response(jsonify({'error': str(e)}), 500)
+
+# this function gets the number of items available for a specific item and is similar to the above function
+@app.route('/api/items/<item_id>/available-quantity', methods=['GET'])
+def get_available_quantity(item_id):
+    """
+    Get the available quantity for a specific item.
+    """
+    try:
+        token = get_access_token()
+        url = f'https://api.ebay.com/buy/browse/v1/item/{item_id}'
+        headers = {
+            'Authorization': f'Bearer {token}',
+            'Content-Type': 'application/json'
+        }
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
+        available_count = response.json().get('estimatedAvailableQuantity', 0)
+
+        return make_response(jsonify({'item_id': item_id, 'available_quantity': available_count}), 200)
+    except Exception as e:
+        return make_response(jsonify({'error': str(e)}), 500)
+
 
 @app.route('/api/orders/<item_id>', methods=['GET'])
 ##########################################################
