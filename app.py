@@ -7,7 +7,7 @@ from flask import Flask, jsonify, make_response, Response, request
 
 from ebay.models.item_model import Item
 from ebay.utils.sql_utils import check_database_connection, check_table_exists
-from ebay.services.ebay_client import get_access_token, search_items
+from ebay.services.ebay_client import get_access_token, search_items, search_item_by_id
 
 # Load environment variables from .env file
 load_dotenv()
@@ -81,7 +81,7 @@ def get_token():
 #####################################################
 # Item Search Routes
 #####################################################
-@app.route('/api/search', methods=['GET'])
+@app.route('/api/search/summary', methods=['GET'])
 def search():
     """
     Search for items on eBay.
@@ -96,188 +96,180 @@ def search():
         return make_response(jsonify({'items': items}), 200)
     except Exception as e:
         return make_response(jsonify({'error': str(e)}), 500)
+    
+    ####################################################################################
+    #
+    # example curl: curl -X GET "http://localhost:5000/api/search/summary?query=laptop"
+    #
+    ###################################################################################
 
-##########################################################
-#
-# ebay items (eq. to meals in meal max)
-#
-##########################################################
-
-##########################################################
-# Function to search for an item by keyword or category
-##########################################################
-@app.route('/api/items/search', methods=['GET'])
-def browse_items():
-    """
-    Search for items by category or keyword.
-
-    """
-    query = request.args.get('query')
-    if not query:
-        return make_response(jsonify({'error': 'Query parameter is required'}), 400)
-
-    try:
-        token = get_access_token()
-        url = f'https://api.ebay.com/buy/browse/v1/item_summary/search?q={query}'
-        headers = {
-            'Authorization': f'Bearer {token}',
-            'Content-Type': 'application/json'
-        }
-
-        response = requests.get(url, headers=headers)
-        response.raise_for_status()
-        items = response.json().get('itemSummaries', [])
-
-        return make_response(jsonify({'items': items}), 200)
-    except Exception as e:
-        return make_response(jsonify({'error': str(e)}), 500)
-
-##########################################################
-# Function to get the top item of an ebay search since
-# it returns alot of searches with the above method
-##########################################################
-@app.route('/api/items/top-search', methods=['GET'])
+# Top search result given the category or keyword
+@app.route('/api/search/top-search', methods=['GET'])
 def get_top_search_result():
     """
     Get the top search result for a given keyword. Based on the above function which gets a search
     """
     query = request.args.get('query')
+    limit = int(request.args.get('limit', 5))
     if not query:
         return make_response(jsonify({'error': 'Query parameter is required'}), 400)
 
     try:
-        token = get_access_token()
-        url = f'https://api.ebay.com/buy/browse/v1/item_summary/search?q={query}&limit=1'
-        headers = {
-            'Authorization': f'Bearer {token}',
-            'Content-Type': 'application/json'
-        }
-
-        response = requests.get(url, headers=headers)
-        response.raise_for_status()
-        items = response.json().get('itemSummaries', [])
+        items = search_items(query, limit)
 
         if not items:
-            return make_response(jsonify({'message': 'No results found'}), 200)
-
-        # Simplify the output for the top item
+            return make_response(jsonify({'error': 'No items found for the given query'}), 404)
+        
         top_item = items[0]
-        simplified_top_item = {
-            'title': top_item.get('title'),
-            'price': top_item.get('price', {}).get('value'),
-            'currency': top_item.get('price', {}).get('currency'),
-            'item_id': top_item.get('itemId'),
-            'item_web_url': top_item.get('itemWebUrl'),
-            'condition': top_item.get('condition'),
-            'image_url': top_item.get('image', {}).get('imageUrl')
+
+        # Create a summary for the top item
+        summary = {
+            "ebay_item_id": top_item.get("ebay_item_id"),
+            "title": top_item.get("title"),
+            "price": top_item.get("price"),
         }
 
-        return make_response(jsonify({'top_item': simplified_top_item}), 200)
+        return make_response(jsonify({"top_item": summary}), 200)
     except Exception as e:
         return make_response(jsonify({'error': str(e)}), 500)
+    
+    ####################################################################################
+    #
+    # example curl: curl -X GET "http://localhost:5000/api/search/top-search?query=laptop"
+    #
+    ###################################################################################
 
-# this function gets the number of items sold for a specific item
-# for testing this function and function below use this test itemid:
-# http://127.0.0.1:5001/api/items/v1|110567362227|0/sold-quantity (available for other function)
-@app.route('/api/items/<item_id>/sold-quantity', methods=['GET'])
-def get_sold_quantity(item_id):
+
+# Search using ebay_item_id
+@app.route('/api/search/item/ebay_id', methods=['GET'])
+def search_ebay_id():
+    """
+    Search for an item on eBay given the ebay item id.
+    """
+    ebay_item_id = request.args.get('ebay_item_id')
+
+    if not ebay_item_id:
+        return make_response(jsonify({'error': 'Ebay item id parameter is required'}), 400)
+
+    try:
+        item_data = search_item_by_id(ebay_item_id)
+        
+        if not item_data:
+            return make_response(jsonify({'error': 'No item found for the given eBay item ID'}), 404)
+
+        title = item_data.get("title")
+        if not title:
+            raise ValueError("Title is missing from item data")
+        
+        price_info = item_data.get("price", {})
+        price = float(price_info.get("value", 0))
+        if price <= 0:
+            raise ValueError(f"Invalid price: {price}")
+
+        estimated_availabilities = item_data.get("estimatedAvailabilities", [])
+        if estimated_availabilities:
+            available_quantity = estimated_availabilities[0].get("estimatedAvailableQuantity")
+            sold_quantity = estimated_availabilities[0].get("estimatedSoldQuantity")
+        else:
+            available_quantity = 0
+            sold_quantity = 0
+
+        return make_response(jsonify({
+            "ebay_item_id": ebay_item_id,
+            "title": title,
+            "price": price,
+            "available_quantity": available_quantity,
+            "sold_quantity": sold_quantity
+        }), 200)
+    except Exception as e:
+        return make_response(jsonify({'error': str(e)}), 500)
+    
+    ####################################################################################
+    #
+    # example curl: curl -X GET "http://localhost:5000/api/search/item/ebay_id?ebay_item_id=v1|254582474636|0"
+    #
+    ###################################################################################
+
+@app.route('/api/search/item/sold_quantity', methods=['GET'])
+def get_sold_quantity():
     """
     Get the sold quantity for a specific item.
     """
+    ebay_item_id = request.args.get('ebay_item_id')
+
+    if not ebay_item_id:
+        return make_response(jsonify({'error': 'Ebay item id parameter is required'}), 400)
+
     try:
-        token = get_access_token()
-        url = f'https://api.ebay.com/buy/browse/v1/item/{item_id}'
-        headers = {
-            'Authorization': f'Bearer {token}',
-            'Content-Type': 'application/json'
-        }
+        item_data = search_item_by_id(ebay_item_id)
+        
+        if not item_data:
+            return make_response(jsonify({'error': 'No item found for the given eBay item ID'}), 404)
 
-        response = requests.get(url, headers=headers)
-        response.raise_for_status()
-        sold_count = response.json().get('estimatedSalesCount', 0)
+        title = item_data.get("title", "Unknown Title")
 
-        return make_response(jsonify({'item_id': item_id, 'sold_quantity': sold_count}), 200)
+        estimated_availabilities = item_data.get("estimatedAvailabilities", [])
+        sold_quantity = (
+            estimated_availabilities[0].get("estimatedSoldQuantity", 0)
+            if estimated_availabilities else 0
+        )
+
+    
+        return make_response(jsonify({
+            "Ebay Item ID": ebay_item_id,
+            "Title": title,
+            "Sold quantity: ": sold_quantity
+        }), 200)
     except Exception as e:
         return make_response(jsonify({'error': str(e)}), 500)
+    
+
+    ####################################################################################
+    #
+    # example curl: curl -X GET "http://localhost:5000/api/search/item/sold_quantity?ebay_item_id=v1|254582474636|0"
+    #
+    ###################################################################################
 
 # this function gets the number of items available for a specific item and is similar to the above function
-@app.route('/api/items/<item_id>/available-quantity', methods=['GET'])
-def get_available_quantity(item_id):
+@app.route('/api/search/item/available_quantity', methods=['GET'])
+def get_available_quantity(ebay_item_id):
     """
     Get the available quantity for a specific item.
     """
-    try:
-        token = get_access_token()
-        url = f'https://api.ebay.com/buy/browse/v1/item/{item_id}'
-        headers = {
-            'Authorization': f'Bearer {token}',
-            'Content-Type': 'application/json'
-        }
-        response = requests.get(url, headers=headers)
-        response.raise_for_status()
-        available_count = response.json().get('estimatedAvailableQuantity', 0)
+    ebay_item_id = request.args.get('ebay_item_id')
 
-        return make_response(jsonify({'item_id': item_id, 'available_quantity': available_count}), 200)
+    if not ebay_item_id:
+        return make_response(jsonify({'error': 'Ebay item id parameter is required'}), 400)
+
+    try:
+        item_data = search_item_by_id(ebay_item_id)
+        
+        if not item_data:
+            return make_response(jsonify({'error': 'No item found for the given eBay item ID'}), 404)
+
+        title = item_data.get("title", "Unknown Title")
+
+        estimated_availabilities = item_data.get("estimatedAvailabilities", [])
+        available_quantity = (
+            estimated_availabilities[0].get("estimatedAvailableQuantity", 0)
+            if estimated_availabilities else 0
+        )
+       
+    
+        return make_response(jsonify({
+            "Ebay Item ID": ebay_item_id,
+            "Title": title,
+            "Available quantity: ": available_quantity
+        }), 200)
     except Exception as e:
         return make_response(jsonify({'error': str(e)}), 500)
-
-
-@app.route('/api/orders/<item_id>', methods=['GET'])
-##########################################################
-# Function to get the number of orders
-##########################################################
-
-def number_of_orders(item_id):
-    try:
-        token = get_access_token()
-        if not token:
-            app.logger.error("Failed to retrieve access token.")
-            return 0
-
-        url = f'https://api.ebay.com/buy/browse/v1/item/{item_id}'
-        app.logger.info(f"Requesting eBay API for item ID: {item_id}")
-
-        headers = {
-            'Authorization': f'Bearer {token}',
-            'Content-Type': 'application/json'
-        }
-
-        response = requests.get(url, headers=headers)
-        response.raise_for_status()
-
-        data = response.json()
-        sales_count = data.get('estimatedSalesCount', 0)
-        return sales_count
-
-    except requests.RequestException as e:
-        app.logger.error(f"Request error: {e}")
-        return 0
-    except Exception as e:
-        app.logger.error(f"Unexpected error: {e}")
-        return 0
-
-##########################################################
-# Route to get number of orders for an item
-##########################################################
-# http://127.0.0.1:5000/api/orders/123
-
-@app.route('/api/orders/<item_id>', methods=['GET'])
-def get_number_of_orders(item_id):
-    """
-    API endpoint to get the number of orders for a specific item.
-
-    Args:
-        item_id (str): The eBay item ID.
-
-    Returns:
-        JSON response with the number of orders or an error message.
-    """
-    try:
-        orders_count = number_of_orders(item_id)  # This returns an int
-        return jsonify({'item_id': item_id, 'orders_count': orders_count})
-    except Exception as e:
-        app.logger.error(f"Error in get_number_of_orders: {e}")
-        return jsonify({'error': str(e)}), 500
+    
+    ####################################################################################
+    #
+    # example curl: curl -X GET "http://localhost:5000/api/search/item/available_quantity?ebay_item_id=v1|254582474636|0"
+    #
+    ###################################################################################
+    
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)
