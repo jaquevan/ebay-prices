@@ -81,18 +81,33 @@ def search_items(query, limit=5):
         response.raise_for_status()  # Raise an exception for HTTP errors
         data = response.json()
 
-        # Check if items are returned
-        items = data.get("itemSummaries", [])
-        if items:
-            print("Search Results!")
-            for item in items:
-                print(f"Item ID: {item['itemId']}, Title: {item['title']}, "
-                      f"Price: {item['price']}")
-        else:
-            print("No items found.")
-        return items
+        # Iterate directly over the "itemSummaries" list
+        if "itemSummaries" not in data:
+            raise ValueError(f"No items found for query: {query}")
+
+        processed_items = []
+        for item in data["itemSummaries"]:  # Directly iterate over the list of items
+            title = item.get("title")
+            if not title:
+                raise ValueError("Title is missing from item data")
+
+            price_info = item.get("price", {})
+            price = float(price_info.get("value", 0))
+            if price <= 0:
+                raise ValueError(f"Invalid price: {price}")
+
+            
+            processed_items.append({
+                "ebay_item_id": item.get("itemId"),
+                "title": title,
+                "price": price,
+            })
+
+        return processed_items
     except requests.exceptions.RequestException as e:
         raise RuntimeError(f"Error searching for items: {e}")
+    except KeyError as e:
+        raise ValueError(f"Missing expected data in response: {e}")
 
 def search_item_by_id(ebay_item_id):
     """
@@ -103,7 +118,7 @@ def search_item_by_id(ebay_item_id):
         limit (int): The number of results to return.
 
     Returns:
-        list[dict]: A list of items matching the search query.
+        dict: A dict of the item attributes given the ebay item id
     """
     token = get_access_token()  # Ensure a valid token is available
 
