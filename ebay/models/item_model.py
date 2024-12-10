@@ -148,7 +148,7 @@ def get_item_by_id(item_id: int) -> Item:
            cursor = conn.cursor()
            logger.info("Attempting to retrieve item with ID %s", item_id)
            cursor.execute("""
-               SELECT id, seller, title, price, category, quantity, deleted
+               SELECT id, ebay_item_id, title, price, available_quantity, sold_quantity, alert_price, deleted
                FROM items
                WHERE id = ?
            """, (item_id,))
@@ -156,17 +156,17 @@ def get_item_by_id(item_id: int) -> Item:
 
 
            if row:
-               if row[6]:  # deleted is True
+               if row[7]:  # deleted is True
                    raise ValueError(f"Item with ID {item_id} has been deleted")
-
 
                return Item(
                    id=row[0],
-                   seller=row[1],
+                   ebay_item_id=row[1],
                    title=row[2],
                    price=row[3],
-                   category=row[4],
-                   quantity=row[5]
+                   available_quantity=row[4],
+                   sold_quantity = row[5],
+                   alert_price=row[6]
                )
 
 
@@ -202,12 +202,13 @@ def get_all_items() -> list[dict]:
 
            items = [
                {
-                   "id": row[0],
-                   "seller": row[1],
-                   "title": row[2],
-                   "price": row[3],
-                   "category": row[4],
-                   "quantity": row[5],
+                   "id"=row[0],
+                   "ebay_item_id"=row[1],
+                   "title"=row[2],
+                   "price"=row[3],
+                   "available_quantity"=row[4],
+                   "sold_quantity" = row[5],
+                   "alert_price"=row[6]
                }
                for row in rows
            ]
