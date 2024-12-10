@@ -6,6 +6,5 @@ CREATE TABLE wishlist (
     title TEXT NOT NULL,
     price REAL,
     alert_price REAL,
-    added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id)
+    deleted BOOLEAN DEFAULT FALSE
 );
