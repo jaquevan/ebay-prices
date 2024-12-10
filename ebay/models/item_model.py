@@ -50,7 +50,7 @@ def create_item(ebay_item_id: str,
            cursor = conn.cursor()
            cursor.execute("""
                INSERT INTO items (ebay_item_id, title, price, available_quantity, sold_quantity, alert_price)
-               VALUES (?, ?, ?, ?, ?)
+               VALUES (?, ?, ?, ?, ?, ?)
            """, (ebay_item_id, title, price, available_quantity, sold_quantity, alert_price))
            conn.commit()
            logger.info("Item created successfully: %s - %s", ebay_item_id, title)
@@ -93,7 +93,7 @@ def create_item_ebay_id(ebay_item_id):
             cursor = conn.cursor()
             cursor.execute("""
                 INSERT INTO items (ebay_item_id, title, price, available_quantity, sold_quantity, alert_price)
-                VALUES (?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?)
             """, (ebay_item_id, title, price, available_quantity, sold_quantity, alert_price))
             conn.commit()
             logger.info("Item created successfully: %s - %s", ebay_item_id, title)
