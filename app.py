@@ -232,7 +232,7 @@ def get_sold_quantity():
 
 # this function gets the number of items available for a specific item and is similar to the above function
 @app.route('/api/search/item/available_quantity', methods=['GET'])
-def get_available_quantity(ebay_item_id):
+def get_available_quantity():
     """
     Get the available quantity for a specific item.
     """
