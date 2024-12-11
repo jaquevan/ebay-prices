@@ -6,7 +6,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from ebay.models.wishlist_model import WishlistModel
 from ebay.models.item_model import Item
-from ebay.models.item_model import create_item
+
 
 
 @pytest.fixture
@@ -14,17 +14,16 @@ def wishlist_model():
     """Fixture to provide a fresh WishlistModel for each test."""
     return WishlistModel()
 
-
 @pytest.fixture
 def sample_item():
     """Fixture to provide a sample Item using the new create_item method."""
-    return create_item(ebay_item_id="2", title="Shoes", price=100, available_quantity=20, sold_quantity=10, alert_price=3)
+    return Item(1, 'Ebay Item Id 1', 'Title 1', 100.0, 10, 5, 60.0)
 
 
 @pytest.fixture
 def another_item():
     """Fixture to provide another sample Item using the new create_item method."""
-    return create_item(ebay_item_id="3", title="Pillow", price=200, available_quantity=40, sold_quantity=20, alert_price=4)
+    return Item(2, 'Ebay Item Id 2', 'Title 2', 200.0, 20, 10, 120.0)
 
 
 def test_add_item_to_wishlist(wishlist_model, sample_item):
