@@ -1,13 +1,15 @@
 from dotenv import load_dotenv
 import requests
 from flask import Flask, jsonify, make_response, Response, request
-
+import logging as logger
+import sqlite3
 
 # from flask_cors import CORS
 
 from ebay.models.item_model import Item
-from ebay.utils.sql_utils import check_database_connection, check_table_exists
+from ebay.utils.sql_utils import check_database_connection, check_table_exists, get_db_connection
 from ebay.services.ebay_client import get_access_token, search_items, search_item_by_id
+from ebay.models.item_model import create_item
 
 # Load environment variables from .env file
 load_dotenv()
@@ -85,6 +87,17 @@ def get_token():
 def search():
     """
     Search for items on eBay.
+
+    Parameters:
+        query (str): The search keyword.
+        limit (int, optional): The maximum number of items to retrieve. Default is 5.
+
+    Returns:
+        Response: A JSON response containing the search results, or an error message.
+
+    Example:
+        curl -X GET "http://localhost:5000/api/search/summary?query=laptop"
+
     """
     query = request.args.get('query')
     limit = int(request.args.get('limit', 5))
@@ -108,6 +121,14 @@ def search():
 def get_top_search_result():
     """
     Get the top search result for a given keyword. Based on the above function which gets a search
+
+    Parameters:
+        query (str): The search keyword.
+        limit (int, optional): The maximum number of items to retrieve. Default is 5.
+
+    Returns:
+        Response: A JSON response containing the top search result, or an error message.
+
     """
     query = request.args.get('query')
     limit = int(request.args.get('limit', 5))
@@ -145,6 +166,16 @@ def get_top_search_result():
 def search_ebay_id():
     """
     Search for an item on eBay given the ebay item id.
+
+    Parameters:
+        ebay_item_id (str): The eBay item ID of the item to search for.
+
+    Returns:
+        Response: A JSON response containing the item details, or an error message.
+
+    Example:
+        curl -X GET "http://localhost:5000/api/search/item/ebay_id?ebay_item_id=v1|254582474636|0"
+
     """
     ebay_item_id = request.args.get('ebay_item_id')
 
@@ -193,7 +224,18 @@ def search_ebay_id():
 @app.route('/api/search/item/sold_quantity', methods=['GET'])
 def get_sold_quantity():
     """
-    Get the sold quantity for a specific item.
+    Get the sold quantity for a specific item on eBay.
+
+    This endpoint retrieves the sold quantity of an item based on its eBay item ID.
+
+    Parameters:
+        ebay_item_id (str): The eBay item ID of the item to search for.
+
+    Returns:
+        Response: A JSON response containing the sold quantity of the item, or an error message.
+
+    Example:
+        curl -X GET "http://localhost:5000/api/search/item/sold_quantity?ebay_item_id=v1|254582474636|0"
     """
     ebay_item_id = request.args.get('ebay_item_id')
 
@@ -234,7 +276,17 @@ def get_sold_quantity():
 @app.route('/api/search/item/available_quantity', methods=['GET'])
 def get_available_quantity():
     """
-    Get the available quantity for a specific item.
+    Get the available quantity for a specific item on eBay.
+    This endpoint retrieves the available quantity of an item based on its eBay item ID.
+
+    Parameters:
+        ebay_item_id (str): The eBay item ID of the item to search for.
+
+    Returns:
+        Response: A JSON response containing the available quantity of the item, or an error message.
+
+    Example:
+        curl -X GET "http://localhost:5000/api/search/item/available_quantity?ebay_item_id=v1|254582474636|0"
     """
     ebay_item_id = request.args.get('ebay_item_id')
 
@@ -270,11 +322,6 @@ def get_available_quantity():
     #
     ###################################################################################
     
-
-if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5000)
-
-
 #
 # Wishlist Management
 #
@@ -402,3 +449,9 @@ def get_wishlist() -> Response:
     except sqlite3.Error as e:
         logger.error("Database error while retrieving wishlist items: %s", str(e))
         return make_response(jsonify({'error': str(e)}), 500)
+
+if __name__ == "__main__":
+    app.run(debug=True, host="0.0.0.0", port=5000)
+
+
+
