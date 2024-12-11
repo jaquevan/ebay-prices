@@ -1,10 +1,14 @@
 import pytest
 import os
 import sys
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, scoped_session
 
 # from ebay.models.user_model import Users
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
+from ebay.models.user_model import Users
+from ebay.utils.db import db
 
 @pytest.fixture
 def sample_user():
@@ -12,6 +16,30 @@ def sample_user():
         "username": "testuser",
         "password": "securepassword123"
     }
+
+
+@pytest.fixture(scope="session")
+def test_engine():
+    """Create a new database engine for tests."""
+    return create_engine("sqlite:///:memory:")
+
+@pytest.fixture(scope="session")
+def test_db(test_engine):
+    """Set up the database schema for tests."""
+    db.metadata.create_all(test_engine)
+    yield
+    db.metadata.drop_all(test_engine)
+
+@pytest.fixture
+def session(test_engine, test_db):
+    """Provide a database session for tests."""
+    connection = test_engine.connect()
+    transaction = connection.begin()
+    session = scoped_session(sessionmaker(bind=connection))
+    db.session = session  # Set the session for the app
+    yield session
+    connection.close()
+    session.remove()
 
 
 ##########################################################
