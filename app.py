@@ -22,6 +22,7 @@ app = Flask(__name__)
 # CORS(app)
 
 # Initialize model for route /
+wishlist = WishlistModel()
 
 @app.route('/')
 def index():
@@ -356,8 +357,18 @@ def add_item_to_wishlist() -> Response:
         if not ebay_item_id or not title or not isinstance(price, (int, float)) or price <= 0 or available_quantity < 0 or sold_quantity < 0:
             return make_response(jsonify({'error': 'Invalid input data'}), 400)
 
-        # Create the item in the wishlist
-        create_item(ebay_item_id, title, price, available_quantity, sold_quantity, alert_price)
+        # Assuming an in-memory list for wishlist items (no database)
+        item = {
+            'ebay_item_id': ebay_item_id,
+            'title': title,
+            'price': price,
+            'available_quantity': available_quantity,
+            'sold_quantity': sold_quantity,
+            'alert_price': alert_price
+        }
+
+        # In-memory wishlist (could be a global variable or part of app state)
+        wishlist.add_item_to_wishlist(item)
 
         logger.info(f"Item {title} added to wishlist")
         return make_response(jsonify({'status': 'success', 'message': 'Item added to wishlist'}), 201)
