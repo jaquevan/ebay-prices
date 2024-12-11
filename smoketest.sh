@@ -255,7 +255,6 @@ get_wishlist() {
 
 
 check_health
-init_db
 check_db
 request_ebay_token
 create_user
