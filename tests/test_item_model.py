@@ -69,12 +69,12 @@ def test_create_item(mock_cursor):
 
 
    # Call the function to create a new item
-   create_item(seller="Seller Name", title="Item Title", price=100.0, category="Electronics", quantity=10)
+   create_item(ebay_item_id="Ebay Item Id", title="Item Title", price=100.0, available_quantity=10, sold_quantity=5, alert_price=60.0)
 
 
    expected_query = normalize_whitespace("""
-       INSERT INTO items (seller, title, price, category, quantity)
-       VALUES (?, ?, ?, ?, ?)
+       INSERT INTO items (ebay_item_id, title, price, available_quantity, sold_quantity, alert_price)
+       VALUES (?, ?, ?, ?, ?, ?)
    """)
 
 
@@ -90,22 +90,21 @@ def test_create_item(mock_cursor):
 
 
    # Assert that the SQL query was executed with the correct arguments
-   expected_arguments = ("Seller Name", "Item Title", 100.0, "Electronics", 10)
+   expected_arguments = ("Ebay Item Id", "Item Title", 100.0, 10, 5, 60.0)
    assert actual_arguments == expected_arguments, f"The SQL query arguments did not match. Expected {expected_arguments}, got {actual_arguments}."
 
 
 def test_create_item_duplicate(mock_cursor):
-   """Test creating an item with a duplicate seller and title (should raise an error)."""
+    """Test creating an item with a duplicate ebay item id and title (should raise an error)."""
 
 
-   # Simulate that the database will raise an IntegrityError due to a duplicate entry
-   mock_cursor.execute.side_effect = sqlite3.IntegrityError("UNIQUE constraint failed: items.seller, items.title")
+    # Simulate that the database will raise an IntegrityError due to a duplicate entry
+    mock_cursor.execute.side_effect = sqlite3.IntegrityError("UNIQUE constraint failed: items.ebay_item_id, items.title")
 
 
    # Expect the function to raise a ValueError with a specific message when handling the IntegrityError
-   with pytest.raises(ValueError, match=r"Item with seller 'Seller Name' and title 'Item Title' already exists."):
-       create_item(seller="Seller Name", title="Item Title", price=100.0, category="Electronics", quantity=10)
-
+    with pytest.raises(ValueError, match=r"Item with ebay id 'Ebay Item Id' and title 'Item Title' already exists."):
+        create_item(ebay_item_id="Ebay Item Id", title="Item Title", price=100.0, available_quantity=10, sold_quantity=5, alert_price=60.0)
 
 def test_create_item_invalid_price():
    """Test error when trying to create an item with an invalid price (e.g., negative price)"""
@@ -113,26 +112,26 @@ def test_create_item_invalid_price():
 
    # Attempt to create an item with a negative price
    with pytest.raises(ValueError, match=r"Invalid price: -100.0 \(must be a positive number\)."):
-       create_item(seller="Seller Name", title="Item Title", price=-100.0, category="Electronics", quantity=10)
+       create_item(ebay_item_id="Ebay Item Id", title="Item Title", price=-100.0, available_quantity=-10, sold_quantity=5, alert_price=60.0)
 
 
    # Attempt to create an item with a non-numeric price
    with pytest.raises(ValueError, match=r"Invalid price: invalid \(must be a positive number\)."):
-       create_item(seller="Seller Name", title="Item Title", price="invalid", category="Electronics", quantity=10)
+       create_item(ebay_item_id="Ebay Item Id", title="Item Title", price="invalid", available_quantity=-10, sold_quantity=5, alert_price=60.0)
 
 
 def test_create_item_invalid_quantity():
    """Test error when trying to create an item with an invalid quantity (e.g., negative quantity)."""
 
 
-   # Attempt to create an item with a negative quantity
+   # Attempt to create an item with a negative available quantity
    with pytest.raises(ValueError, match=r"Invalid quantity: -10 \(must be a non-negative integer\)."):
-       create_item(seller="Seller Name", title="Item Title", price=100.0, category="Electronics", quantity=-10)
+       create_item(ebay_item_id="Ebay Item Id", title="Item Title", price=100.0, available_quantity=-10, sold_quantity=5, alert_price=60.0)
 
 
    # Attempt to create an item with a non-integer quantity
    with pytest.raises(ValueError, match=r"Invalid quantity: invalid \(must be a non-negative integer\)."):
-       create_item(seller="Seller Name", title="Item Title", price=100.0, category="Electronics", quantity="invalid")
+       create_item(ebay_item_id="Ebay Item Id", title="Item Title", price=100.0, available_quantity="invalid", sold_quantity=5, alert_price=60.0)
 
 
 def test_delete_item(mock_cursor):
@@ -215,16 +214,17 @@ def test_get_item_by_id(mock_cursor):
    # Expected result based on the simulated fetchone return value
 
 
-   mock_cursor.fetchone.return_value = (1, "Seller A", "Item A", 100.0, "Category A", 10, False)
+   mock_cursor.fetchone.return_value = (1, "Ebay Item Id A", "Item A", 100.0, 10, 5, 60.0, False)
 
 
    expected_result = Item(
        id=1,
-       seller="Seller A",
+       ebay_item_id="Ebay Item Id A",
        title="Item A",
        price=100.0,
-       category="Category A",
-       quantity=10
+       available_quantity=10,
+       sold_quantity=5,
+       alert_price=60.0
    )
    result = get_item_by_id(1)
    # Ensure the result matches the expected output
@@ -247,9 +247,9 @@ def test_get_all_items(mock_cursor):
 
    # Simulate that there are multiple items in the database
    mock_cursor.fetchall.return_value = [
-       (1, "Seller A", "Item A", 100.0, "Electronics", 10),
-       (2, "Seller B", "Item B", 200.0, "Books", 5),
-       (3, "Seller C", "Item C", 300.0, "Clothing", 2)
+        (1, "Ebay Item Id 1", "Item Title 1", 100.0, 10, 5, 60.0),
+        (2, "Ebay Item Id 2", "Item Title 2", 200.0, 15, 3, 120.0),
+        (3, "Ebay Item Id 3", "Item Title 3", 300.0, 20, 8, 180.0)
    ]
 
 
@@ -259,9 +259,9 @@ def test_get_all_items(mock_cursor):
 
    # Ensure the results match the expected output
    expected_result = [
-       {"id": 1, "seller": "Seller A", "title": "Item A", "price": 100.0, "category": "Electronics", "quantity": 10},
-       {"id": 2, "seller": "Seller B", "title": "Item B", "price": 200.0, "category": "Books", "quantity": 5},
-       {"id": 3, "seller": "Seller C", "title": "Item C", "price": 300.0, "category": "Clothing", "quantity": 2}
+        {"id": 1, "ebay_item_id": "Ebay Item Id 1", "title": "Item Title 1", "price": 100.0, "available_quantity": 10, "sold_quantity": 5, "alert_price": 60.0},
+        {"id": 2, "ebay_item_id": "Ebay Item Id 2", "title": "Item Title 2", "price": 200.0, "available_quantity": 15, "sold_quantity": 3, "alert_price": 120.0},
+        {"id": 3, "ebay_item_id": "Ebay Item Id 3", "title": "Item Title 3", "price": 300.0, "available_quantity": 20, "sold_quantity": 8, "alert_price": 180.0},
    ]
 
 
@@ -270,7 +270,7 @@ def test_get_all_items(mock_cursor):
 
    # Ensure the SQL query was executed correctly
    expected_query = normalize_whitespace("""
-       SELECT id, seller, title, price, category, quantity
+       SELECT id, ebay_item_id, title, price, available_quantity, sold_quantity, alert_price
        FROM items
        WHERE deleted = FALSE
    """)
@@ -301,7 +301,12 @@ def test_get_all_items_empty_catalog(mock_cursor, caplog):
 
 
    # Ensure the SQL query was executed correctly
-   expected_query = normalize_whitespace("SELECT id, seller, title, price, category, quantity FROM items WHERE deleted = FALSE")
+   expected_query = normalize_whitespace("""
+    SELECT id, ebay_item_id, title, price, available_quantity, sold_quantity, alert_price
+    FROM items
+    WHERE deleted = FALSE
+    """)
+
    actual_query = normalize_whitespace(mock_cursor.execute.call_args[0][0])
 
 
