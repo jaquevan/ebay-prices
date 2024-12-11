@@ -7,6 +7,7 @@ import sqlite3
 # from flask_cors import CORS
 
 from ebay.models.item_model import Item
+from ebay.models.wishlist_model import WishlistModel
 from ebay.utils.sql_utils import check_database_connection, check_table_exists, get_db_connection
 from ebay.services.ebay_client import get_access_token, search_items, search_item_by_id
 from ebay.models.item_model import create_item
