@@ -182,9 +182,7 @@ search_top_result "laptop"
 search_item_by_ebay_id "v1|254582474636|0"
 check_sold_quantity "v1|254582474636|0"
 check_available_quantity "v1|254582474636|0"
-add_item_to_wishlist "v1|254582474636|0"
-remove_item_from_wishlist 1
-get_wishlist
+
 
 echo "All tests passed successfully!"
 

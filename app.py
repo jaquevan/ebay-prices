@@ -77,9 +77,12 @@ def get_token():
     Generate and return an eBay API token.
     """
     try:
-        token = get_access_token()
+        app.logger.info("Requesting eBay token...")
+        token = get_access_token()  # Ensure this function is implemented correctly
+        app.logger.info("Token generated successfully")
         return make_response(jsonify({'token': token}), 200)
     except Exception as e:
+        app.logger.error(f"Error generating token: {e}")
         return make_response(jsonify({'error': str(e)}), 500)
 
 #####################################################
