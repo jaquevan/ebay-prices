@@ -55,7 +55,7 @@ def create_item(ebay_item_id: str,
            conn.commit()
            logger.info("Item created successfully: %s - %s", ebay_item_id, title)
    except sqlite3.IntegrityError as e:
-       logger.error("Item with ebay id '%s' and title '%s' already exists.", ebay_item_id, title)
+       logger.error("Item with ebay item id '%s' and title '%s' already exists.", ebay_item_id, title)
        raise ValueError(f"Item with ebay id '{ebay_item_id}' and title '{title}' already exists.") from e
    except sqlite3.Error as e:
        logger.error("Database error while creating item: %s", str(e))
@@ -83,8 +83,8 @@ def create_item_ebay_id(ebay_item_id):
             available_quantity = estimated_availabilities[0].get("estimatedAvailableQuantity")
             sold_quantity = estimated_availabilities[0].get("estimatedSoldQuantity")
         else:
-            available_quantity = None
-            sold_quantity = None
+            available_quantity = 0
+            sold_quantity = 0
 
         alert_price = price * 0.6
 
@@ -188,7 +188,7 @@ def get_all_items() -> list[dict]:
            cursor = conn.cursor()
            logger.info("Attempting to retrieve all non-deleted items from the catalog")
            cursor.execute("""
-               SELECT id, seller, title, price, category, quantity
+               SELECT id, ebay_item_id, title, price, available_quantity, sold_quantity, alert_price
                FROM items
                WHERE deleted = FALSE
            """)
@@ -202,13 +202,13 @@ def get_all_items() -> list[dict]:
 
            items = [
                {
-                   "id"=row[0],
-                   "ebay_item_id"=row[1],
-                   "title"=row[2],
-                   "price"=row[3],
-                   "available_quantity"=row[4],
-                   "sold_quantity" = row[5],
-                   "alert_price"=row[6]
+                   "id": row[0],
+                   "ebay_item_id": row[1],
+                   "title": row[2],
+                   "price": row[3],
+                   "available_quantity": row[4],
+                   "sold_quantity": row[5],
+                   "alert_price": row[6]
                }
                for row in rows
            ]
